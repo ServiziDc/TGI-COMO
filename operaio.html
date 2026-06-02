@@ -116,10 +116,22 @@
     if (!user) { window.location.href = 'index.html'; return; }
     currentUser = user;
 
-    const snap = await getDoc(doc(db, 'utenti', user.uid));
-    if (!snap.exists()) { window.location.href = 'index.html'; return; }
-    profilo = snap.data();
-    if (profilo.ruolo === 'admin') { window.location.href = 'admin.html'; return; }
+    try {
+      const snap = await getDoc(doc(db, 'utenti', user.uid));
+      if (!snap.exists()) {
+        // Nessun profilo → evito il loop: logout e torno al login
+        await signOut(auth);
+        window.location.href = 'index.html';
+        return;
+      }
+      profilo = snap.data();
+      if (profilo.ruolo === 'admin') { window.location.href = 'admin.html'; return; }
+    } catch(e) {
+      alert('Impossibile leggere il profilo da Firestore (' + (e.code || e.message) + '). Controlla che Firestore sia attivo e le regole pubblicate.');
+      await signOut(auth);
+      window.location.href = 'index.html';
+      return;
+    }
 
     document.getElementById('benvenuto').textContent = `Ciao, ${profilo.nome}!`;
     document.getElementById('subEmail').textContent  = profilo.email;

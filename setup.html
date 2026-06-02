@@ -36,7 +36,7 @@
 
 <script type="module">
   import { auth, db } from './js/firebase-config.js';
-  import { createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
   import { doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   window.creaAdmin = async function() {
@@ -48,10 +48,9 @@
     errEl.classList.remove('show');
     okEl.classList.remove('show');
 
-    try {
-      const cred = await createUserWithEmailAndPassword(auth, ADMIN_EMAIL, ADMIN_PASS);
-      await setDoc(doc(db, 'utenti', cred.user.uid), {
-        uid: cred.user.uid,
+    async function scriviProfilo(uid) {
+      await setDoc(doc(db, 'utenti', uid), {
+        uid,
         nome: 'T.G.I',
         cognome: 'Como',
         nomeCompleto: 'T.G.I Como',
@@ -60,13 +59,34 @@
         ruolo: 'admin',
         creato: serverTimestamp()
       });
+    }
 
-      okEl.textContent = '✓ Admin creato! Ora puoi eliminare questo file (setup.html) e accedere con TGI.ITALIA / TGI2026@';
+    try {
+      let uid;
+      try {
+        // 1° caso: l'account non esiste ancora → lo creo
+        const cred = await createUserWithEmailAndPassword(auth, ADMIN_EMAIL, ADMIN_PASS);
+        uid = cred.user.uid;
+      } catch(e) {
+        if (e.code === 'auth/email-already-in-use') {
+          // 2° caso: l'account esiste già → entro per recuperare l'uid e creare il profilo mancante
+          const cred = await signInWithEmailAndPassword(auth, ADMIN_EMAIL, ADMIN_PASS);
+          uid = cred.user.uid;
+        } else {
+          throw e;
+        }
+      }
+
+      // In entrambi i casi scrivo/aggiorno il profilo su Firestore
+      await scriviProfilo(uid);
+
+      okEl.textContent = '✓ Admin pronto! Profilo creato su Firestore. Elimina questo file (setup.html) e accedi con TGI.ITALIA / TGI2026@';
       okEl.classList.add('show');
 
     } catch(e) {
-      let msg = e.message;
-      if (e.code === 'auth/email-already-in-use') msg = 'Admin già creato in precedenza. Puoi eliminare questo file.';
+      let msg = e.code ? (e.code + ' — ' + e.message) : e.message;
+      if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential')
+        msg = 'L\'account esiste già ma con una password diversa. Elimina l\'utente soluzioni@tgiitalia.com da Firebase → Authentication → Users, poi riprova.';
       errEl.textContent = msg;
       errEl.classList.add('show');
     }

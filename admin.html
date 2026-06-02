@@ -152,12 +152,24 @@
   // ── AUTH CHECK ──
   onAuthStateChanged(auth, async (user) => {
     if (!user) { window.location.href = 'index.html'; return; }
-    const snap = await getDoc(doc(db, 'utenti', user.uid));
-    if (!snap.exists() || snap.data().ruolo !== 'admin') {
-      window.location.href = 'operaio.html'; return;
+    try {
+      const snap = await getDoc(doc(db, 'utenti', user.uid));
+      if (!snap.exists()) {
+        // Nessun profilo → evito il loop: logout e torno al login
+        await signOut(auth);
+        window.location.href = 'index.html';
+        return;
+      }
+      if (snap.data().ruolo !== 'admin') {
+        window.location.href = 'operaio.html'; return;
+      }
+      aggiornaLabel();
+      caricaOperai();
+    } catch(e) {
+      alert('Impossibile leggere il profilo da Firestore (' + (e.code || e.message) + '). Controlla che Firestore sia attivo e le regole pubblicate.');
+      await signOut(auth);
+      window.location.href = 'index.html';
     }
-    aggiornaLabel();
-    caricaOperai();
   });
 
   function aggiornaLabel() {

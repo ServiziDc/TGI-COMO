@@ -90,6 +90,7 @@
   import {
     signInWithEmailAndPassword,
     onAuthStateChanged,
+    signOut,
     EmailAuthProvider,
     reauthenticateWithCredential,
     updatePassword
@@ -103,7 +104,14 @@
     if (user) {
       try {
         const snap = await getDoc(doc(db, 'utenti', user.uid));
-        if (snap.exists() && snap.data().ruolo === 'admin') {
+        if (!snap.exists()) {
+          // Account autenticato ma senza profilo Firestore → niente loop: logout + messaggio
+          await signOut(auth);
+          showErr('Account valido ma profilo non trovato su Firestore. Apri setup.html ed esegui "Crea Admin T.G.I" per creare il profilo, poi riprova.');
+          reset();
+          return;
+        }
+        if (snap.data().ruolo === 'admin') {
           window.location.href = 'admin.html';
         } else {
           window.location.href = 'operaio.html';
