@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tgi-v1';
+const CACHE_NAME = 'tgi-v2';
 
 const ASSETS = [
   './',
