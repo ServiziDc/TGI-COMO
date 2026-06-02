@@ -101,11 +101,17 @@
   // Se già loggato, redirect
   onAuthStateChanged(auth, async (user) => {
     if (user) {
-      const snap = await getDoc(doc(db, 'utenti', user.uid));
-      if (snap.exists() && snap.data().ruolo === 'admin') {
-        window.location.href = 'admin.html';
-      } else {
-        window.location.href = 'operaio.html';
+      try {
+        const snap = await getDoc(doc(db, 'utenti', user.uid));
+        if (snap.exists() && snap.data().ruolo === 'admin') {
+          window.location.href = 'admin.html';
+        } else {
+          window.location.href = 'operaio.html';
+        }
+      } catch(e) {
+        // Lettura del profilo fallita (Firestore non creato o regole che bloccano)
+        showErr('Accesso riuscito ma impossibile leggere il profilo. Controlla che Firestore sia attivo e che le regole consentano la lettura. Dettagli: ' + (e.code || e.message));
+        reset();
       }
     }
   });

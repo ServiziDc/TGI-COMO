@@ -1,0 +1,27 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Funzione: l'utente corrente è admin?
+    function isAdmin() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/utenti/$(request.auth.uid))
+        && get(/databases/$(database)/documents/utenti/$(request.auth.uid)).data.ruolo == 'admin';
+    }
+
+    // Documento utente: ognuno legge/scrive il proprio; l'admin tutti
+    match /utenti/{uid} {
+      allow read, write: if request.auth != null && (request.auth.uid == uid || isAdmin());
+
+      // Sottocollezioni (mesi, bustePaga): proprietario o admin
+      match /{sub=**} {
+        allow read, write: if request.auth != null && (request.auth.uid == uid || isAdmin());
+      }
+    }
+
+    // Qualsiasi altro documento: solo admin
+    match /{document=**} {
+      allow read, write: if isAdmin();
+    }
+  }
+}

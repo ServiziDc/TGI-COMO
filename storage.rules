@@ -1,0 +1,23 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Funzione: l'utente corrente è admin? (legge il ruolo da Firestore)
+    function isAdmin() {
+      return request.auth != null
+        && firestore.exists(/databases/(default)/documents/utenti/$(request.auth.uid))
+        && firestore.get(/databases/(default)/documents/utenti/$(request.auth.uid)).data.ruolo == 'admin';
+    }
+
+    // Buste paga: l'operaio legge le proprie, l'admin legge/scrive tutto
+    match /buste-paga/{uid}/{file=**} {
+      allow read:  if request.auth != null && (request.auth.uid == uid || isAdmin());
+      allow write: if isAdmin();
+    }
+
+    // Tutto il resto: solo admin
+    match /{allPaths=**} {
+      allow read, write: if isAdmin();
+    }
+  }
+}
