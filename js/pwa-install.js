@@ -33,7 +33,7 @@
     @keyframes tgiBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(5px)}}
     #tgi-banner{
       position:fixed;bottom:0;left:0;right:0;
-      background:#1a1a1a;border-top:3px solid #ff6a00;
+      background:#1a1a1a;border-top:3px solid #30AB58;
       padding:14px 16px 22px;z-index:99999;
       display:flex;align-items:center;gap:12px;
       box-shadow:0 -6px 28px rgba(0,0,0,.75);
@@ -45,15 +45,15 @@
     #tgi-banner .gb-txt{flex:1}
     #tgi-banner .gb-t1{font-size:14px;font-weight:700;color:#f0f0f0}
     #tgi-banner .gb-t2{font-size:12px;color:#888;margin-top:2px}
-    #tgi-banner .gb-t2 b{color:#ff6a00}
-    #tgi-banner .gb-btn{background:#ff6a00;color:#fff;border:none;border-radius:9px;padding:10px 16px;font-size:13px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;white-space:nowrap;flex-shrink:0;box-shadow:0 2px 10px rgba(255,106,0,.4)}
+    #tgi-banner .gb-t2 b{color:#30AB58}
+    #tgi-banner .gb-btn{background:#30AB58;color:#fff;border:none;border-radius:9px;padding:10px 16px;font-size:13px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;white-space:nowrap;flex-shrink:0;box-shadow:0 2px 10px rgba(48,171,88,.4)}
     #tgi-banner .gb-x{background:none;border:none;color:#555;font-size:22px;cursor:pointer;padding:4px;line-height:1;flex-shrink:0}
-    #tgi-ios{position:fixed;bottom:0;left:0;right:0;background:#1a1a1a;border-top:3px solid #ff6a00;padding:20px 20px 32px;z-index:99999;font-family:'Inter',sans-serif;box-shadow:0 -6px 28px rgba(0,0,0,.8);animation:tgiUp .35s ease}
+    #tgi-ios{position:fixed;bottom:0;left:0;right:0;background:#1a1a1a;border-top:3px solid #30AB58;padding:20px 20px 32px;z-index:99999;font-family:'Inter',sans-serif;box-shadow:0 -6px 28px rgba(0,0,0,.8);animation:tgiUp .35s ease}
     #tgi-ios .gi-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
     #tgi-ios .gi-hd span{font-size:15px;font-weight:700;color:#f0f0f0}
     #tgi-ios .gi-hd button{background:none;border:none;color:#555;font-size:22px;cursor:pointer;line-height:1}
     #tgi-ios .gi-step{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px;font-size:13px;color:#aaa;line-height:1.5}
-    #tgi-ios .gi-n{background:#ff6a00;color:#fff;min-width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;margin-top:1px}
+    #tgi-ios .gi-n{background:#30AB58;color:#fff;min-width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;margin-top:1px}
     #tgi-ios .gi-step b{color:#f0f0f0}
     #tgi-ios .gi-arr{text-align:center;font-size:28px;margin-top:10px;animation:tgiBounce 1s infinite}
   `;
