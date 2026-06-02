@@ -10,46 +10,6 @@
   <link rel="stylesheet" href="css/style.css"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-  <style>
-    /* ── BUSTE PAGA ── */
-    .busta-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 14px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      margin-bottom: 8px;
-      gap: 10px;
-    }
-    .busta-item:hover { border-color: var(--orange-border); }
-    .busta-info { flex: 1; min-width: 0; }
-    .busta-nome { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .busta-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
-    .btn-scarica-busta {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      color: var(--muted2);
-      padding: 6px 14px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 12px;
-      font-family: 'Inter', sans-serif;
-      font-weight: 600;
-      transition: all 0.15s;
-      white-space: nowrap;
-      flex-shrink: 0;
-      text-decoration: none;
-    }
-    .btn-scarica-busta:hover { border-color: var(--orange); color: var(--orange); }
-    .buste-empty {
-      text-align: center;
-      padding: 30px;
-      color: var(--muted);
-      font-size: 13px;
-    }
-  </style>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="apple-touch-icon.png"/>
   <meta name="theme-color" content="#30AB58"/>
@@ -129,16 +89,6 @@
     </div>
   </div>
 
-  <!-- ══════════════════════════════════════
-       ARCHIVIO BUSTE PAGA
-  ══════════════════════════════════════ -->
-  <div class="card" style="margin-top:20px;">
-    <div class="card-title">— 📎 Archivio Buste Paga</div>
-    <div id="archuvioBuste">
-      <div class="buste-empty"><span class="spinner"></span></div>
-    </div>
-  </div>
-
 </div>
 
 <div class="toast" id="toast"></div>
@@ -149,7 +99,7 @@
     onAuthStateChanged, signOut
   } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
   import {
-    doc, getDoc, setDoc, serverTimestamp, collection, getDocs, query, orderBy
+    doc, getDoc, setDoc, serverTimestamp
   } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   let currentUser = null;
@@ -176,7 +126,6 @@
     document.getElementById('topNome').textContent   = `${profilo.nome} ${profilo.cognome}`;
 
     await caricaMese();
-    await caricaBustePaga();
   });
 
   // ── MESE ──
@@ -196,46 +145,6 @@
     datiMese = snap.exists() ? (snap.data().giorni || {}) : {};
     creaTabella();
     aggiornaStats();
-  }
-
-  // ── BUSTE PAGA ──
-  async function caricaBustePaga() {
-    const el = document.getElementById('archuvioBuste');
-    try {
-      const snap = await getDocs(
-        query(collection(db, 'utenti', currentUser.uid, 'bustePaga'), orderBy('caricato', 'desc'))
-      );
-
-      if (snap.empty) {
-        el.innerHTML = '<div class="buste-empty">Nessuna busta paga disponibile.<br><span style="font-size:11px;color:var(--muted);">Le buste vengono caricate dall\'amministratore.</span></div>';
-        return;
-      }
-
-      el.innerHTML = '';
-      snap.forEach(d => {
-        const b = d.data();
-        const data = b.caricato?.toDate ? b.caricato.toDate().toLocaleDateString('it-IT', {day:'2-digit',month:'2-digit',year:'numeric'}) : '—';
-        const div = document.createElement('div');
-        div.className = 'busta-item';
-        div.innerHTML = `
-          <div class="busta-info">
-            <div class="busta-nome">📄 ${b.nome}</div>
-            <div class="busta-meta">Caricata il ${data} · ${formatBytes(b.dimensione || 0)}</div>
-          </div>
-          <button class="btn-scarica-busta" onclick="visualizzaBusta('${b.url}', '${b.nome}')">👁 Visualizza</button>
-        `;
-        el.appendChild(div);
-      });
-    } catch(e) {
-      el.innerHTML = `<div class="buste-empty" style="color:#ff3d3d;">Errore caricamento buste: ${e.message}</div>`;
-    }
-  }
-
-  function formatBytes(bytes) {
-    if (bytes === 0) return '0 B';
-    const k = 1024, sizes = ['B','KB','MB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   }
 
   // ── GENERA OPZIONI ORA ──
@@ -507,66 +416,6 @@
 
 <script src="js/pwa-install.js"></script>
 
-<!-- MODAL VISUALIZZATORE BUSTA PAGA -->
-<div id="modalBusta" style="
-  display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85);
-  z-index:999; flex-direction:column; align-items:center; justify-content:center;
-  padding:16px;">
-  <div style="
-    background:#1e1e1e; border-radius:12px; width:100%; max-width:900px;
-    height:90vh; display:flex; flex-direction:column; overflow:hidden;
-    border:1px solid rgba(48,171,88,0.3);">
-    <!-- Header modal -->
-    <div style="
-      display:flex; align-items:center; justify-content:space-between;
-      padding:14px 20px; border-bottom:1px solid rgba(255,255,255,0.1);
-      background:#111;">
-      <span id="modalBustaNome" style="color:#fff; font-weight:600; font-size:14px;">📄 Busta paga</span>
-      <div style="display:flex; gap:10px; align-items:center;">
-        <a id="modalBustaDownload" href="#" download style="
-          color:var(--orange); font-size:12px; text-decoration:none;
-          border:1px solid rgba(48,171,88,0.4); padding:5px 12px; border-radius:6px;">
-          ⬇ Scarica
-        </a>
-        <button onclick="chiudiModalBusta()" style="
-          background:none; border:none; color:#aaa; font-size:22px;
-          cursor:pointer; line-height:1; padding:0 4px;">✕</button>
-      </div>
-    </div>
-    <!-- Iframe visualizzatore -->
-    <iframe id="modalBustaFrame" src="" style="
-      flex:1; border:none; width:100%; background:#fff;"></iframe>
-  </div>
-</div>
-
-<script>
-window.visualizzaBusta = function(url, nome) {
-  document.getElementById('modalBustaNome').textContent = '📄 ' + nome;
-  document.getElementById('modalBustaDownload').href = url;
-  document.getElementById('modalBustaDownload').download = nome;
-
-  const modal = document.getElementById('modalBusta');
-  modal.style.display = 'flex';
-
-  // Su mobile usa Google Docs viewer per compatibilità
-  const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
-  const src = isMobile
-    ? 'https://docs.google.com/viewer?url=' + encodeURIComponent(url) + '&embedded=true'
-    : url;
-
-  document.getElementById('modalBustaFrame').src = src;
-};
-
-window.chiudiModalBusta = function() {
-  document.getElementById('modalBusta').style.display = 'none';
-  document.getElementById('modalBustaFrame').src = '';
-};
-
-// Chiudi con ESC
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') chiudiModalBusta();
-});
-</script>
 
 </body>
 </html>
