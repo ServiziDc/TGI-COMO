@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8"/>
+  <link rel="icon" type="image/x-icon" href="img/favicon.ico"/>
+  <link rel="icon" type="image/png" href="img/favicon.png"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login – T.G.I COMO</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="apple-touch-icon" href="apple-touch-icon.png"/>
+  <meta name="theme-color" content="#ff6a00"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="T.G.I COMO"/>
+</head>
+<body>
+<div class="page-sm">
+
+  <div class="auth-logo" style="text-align:center;">
+    <img src="img/logo.png" alt="T.G.I COMO" style="height:90px;width:auto;margin:0 auto 8px;display:block;"/>
+    <p>Registro Ore Lavoro</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">— Accedi</div>
+
+    <div class="form-group">
+      <label>Nome utente o Email</label>
+      <input type="text" id="loginUser" placeholder="es. TGI.ITALIA o mario@email.it" autocomplete="username"/>
+    </div>
+
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password"/>
+    </div>
+
+    <div class="alert alert-error" id="loginError"></div>
+
+    <button class="btn btn-primary" id="btnLogin" onclick="doLogin()">
+      Accedi
+    </button>
+  </div>
+
+  <div class="auth-link">
+    Sei un tecnico nuovo? <a href="registrati.html">Registrati qui</a>
+  </div>
+  <div class="auth-link" style="margin-top:10px;">
+    <a href="recupera-password.html">Hai dimenticato la password?</a>
+  </div>
+  <div class="auth-link" style="margin-top:10px;">
+    <a href="#" onclick="toggleCambioPassword(); return false;">🔑 Cambia password</a>
+  </div>
+
+  <!-- SEZIONE CAMBIO PASSWORD -->
+  <div class="card" id="cardCambioPassword" style="display:none; margin-top:16px;">
+    <div class="card-title">— Cambia Password</div>
+
+    <div class="form-group">
+      <label>Email account</label>
+      <input type="email" id="cpEmail" placeholder="la tua email"/>
+    </div>
+    <div class="form-group">
+      <label>Password attuale</label>
+      <input type="password" id="cpVecchia" placeholder="••••••••"/>
+    </div>
+    <div class="form-group">
+      <label>Nuova password</label>
+      <input type="password" id="cpNuova" placeholder="minimo 6 caratteri"/>
+    </div>
+    <div class="form-group">
+      <label>Conferma nuova password</label>
+      <input type="password" id="cpConferma" placeholder="ripeti la nuova password"/>
+    </div>
+
+    <div class="alert alert-error" id="cpError"></div>
+    <div class="alert alert-success" id="cpSuccess"></div>
+
+    <button class="btn btn-primary" onclick="doCambioPassword()">
+      🔑 Cambia Password
+    </button>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+  import { auth, db } from './js/firebase-config.js';
+  import {
+    signInWithEmailAndPassword,
+    onAuthStateChanged,
+    EmailAuthProvider,
+    reauthenticateWithCredential,
+    updatePassword
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import {
+    doc, getDoc
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  // Se già loggato, redirect
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      const snap = await getDoc(doc(db, 'utenti', user.uid));
+      if (snap.exists() && snap.data().ruolo === 'admin') {
+        window.location.href = 'admin.html';
+      } else {
+        window.location.href = 'operaio.html';
+      }
+    }
+  });
+
+  // ADMIN username → email fittizia interna
+  const ADMIN_USERNAME = 'TGI.ITALIA';
+  const ADMIN_EMAIL    = 'soluzioni@tgiitalia.com';
+
+  window.doLogin = async function() {
+    const userInput = document.getElementById('loginUser').value.trim();
+    const pass      = document.getElementById('loginPass').value;
+    const errEl     = document.getElementById('loginError');
+    const btn       = document.getElementById('btnLogin');
+
+    errEl.classList.remove('show');
+    if (!userInput || !pass) { showErr('Compila tutti i campi'); return; }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Accesso...';
+
+    // Determina email
+    let email = userInput;
+    if (userInput === ADMIN_USERNAME) {
+      email = ADMIN_EMAIL;
+    } else if (!userInput.includes('@')) {
+      showErr('Inserisci email valida o username TGI.ITALIA');
+      reset(); return;
+    }
+
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+      // redirect gestito da onAuthStateChanged
+    } catch(e) {
+      let msg = 'Credenziali non valide';
+      if (e.code === 'auth/user-not-found') msg = 'Utente non trovato';
+      if (e.code === 'auth/wrong-password') msg = 'Password errata';
+      if (e.code === 'auth/too-many-requests') msg = 'Troppi tentativi, riprova tra poco';
+      showErr(msg);
+      reset();
+    }
+  };
+
+  function showErr(msg) {
+    const el = document.getElementById('loginError');
+    el.textContent = msg;
+    el.classList.add('show');
+  }
+
+  function reset() {
+    const btn = document.getElementById('btnLogin');
+    btn.disabled = false;
+    btn.innerHTML = 'Accedi';
+  }
+
+  // Enter key
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter') window.doLogin();
+  });
+</script>
+
+<script src="js/pwa-install.js"></script>
+
+<script type="module">
+  import { auth } from './js/firebase-config.js';
+  import {
+    signInWithEmailAndPassword,
+    EmailAuthProvider,
+    reauthenticateWithCredential,
+    updatePassword
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+  window.toggleCambioPassword = function() {
+    const card = document.getElementById('cardCambioPassword');
+    card.style.display = card.style.display === 'none' ? 'block' : 'none';
+    document.getElementById('cpError').classList.remove('show');
+    document.getElementById('cpSuccess').classList.remove('show');
+  };
+
+  window.doCambioPassword = async function() {
+    const email    = document.getElementById('cpEmail').value.trim();
+    const vecchia  = document.getElementById('cpVecchia').value;
+    const nuova    = document.getElementById('cpNuova').value;
+    const conferma = document.getElementById('cpConferma').value;
+    const errEl    = document.getElementById('cpError');
+    const okEl     = document.getElementById('cpSuccess');
+
+    errEl.classList.remove('show');
+    okEl.classList.remove('show');
+
+    // Validazioni
+    if (!email || !vecchia || !nuova || !conferma) {
+      errEl.textContent = 'Compila tutti i campi.';
+      errEl.classList.add('show'); return;
+    }
+    if (nuova.length < 6) {
+      errEl.textContent = 'La nuova password deve avere almeno 6 caratteri.';
+      errEl.classList.add('show'); return;
+    }
+    if (nuova !== conferma) {
+      errEl.textContent = 'Le due password non coincidono.';
+      errEl.classList.add('show'); return;
+    }
+    if (nuova === vecchia) {
+      errEl.textContent = 'La nuova password deve essere diversa da quella attuale.';
+      errEl.classList.add('show'); return;
+    }
+
+    try {
+      // 1. Login con email + vecchia password per ottenere utente
+      const userCred = await signInWithEmailAndPassword(auth, email, vecchia);
+
+      // 2. Crea credenziale e riautentica
+      const cred = EmailAuthProvider.credential(email, vecchia);
+      await reauthenticateWithCredential(userCred.user, cred);
+
+      // 3. Aggiorna password
+      await updatePassword(userCred.user, nuova);
+
+      okEl.textContent = '✅ Password cambiata con successo!';
+      okEl.classList.add('show');
+
+      // Pulisci campi
+      document.getElementById('cpEmail').value    = '';
+      document.getElementById('cpVecchia').value  = '';
+      document.getElementById('cpNuova').value    = '';
+      document.getElementById('cpConferma').value = '';
+
+    } catch(e) {
+      let msg = 'Errore: ' + e.message;
+      if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential')
+        msg = 'Password attuale errata.';
+      if (e.code === 'auth/user-not-found')
+        msg = 'Email non trovata.';
+      if (e.code === 'auth/invalid-email')
+        msg = 'Email non valida.';
+      errEl.textContent = msg;
+      errEl.classList.add('show');
+    }
+  };
+
+</script>
+</body>
+</html>
